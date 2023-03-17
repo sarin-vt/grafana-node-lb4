@@ -58,7 +58,8 @@
     "@loopback/service-proxy": "^5.0.2",
     "axios": "^1.3.4",
     "dotenv": "^16.0.3",
-    "tslib": "^2.0.0"
+    "tslib": "^2.0.0",
+    "winston": "^3.8.2"
   },
   "devDependencies": {
     "@loopback/build": "^9.0.2",
