@@ -5,7 +5,7 @@ import logger from '../helpers/logger';
 
 
 @injectable({scope: BindingScope.REQUEST})
-export class GrafanaOrgAdministrationService {
+export class GrafanaOrgAuthService {
   constructor() { }
 
   public getGrafanaApiKey = async (grafanaOrgId: string, anchorOrgId: string): Promise<string | undefined> => {
