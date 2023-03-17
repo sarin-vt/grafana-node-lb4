@@ -1,34 +1,31 @@
 import {BindingScope, injectable} from '@loopback/core';
 import axios from 'axios';
-import {GRAFANA_ADMIN_AUTH_URL} from '../constants';
-import logger from '../helpers/logger';
+import {isEmpty} from 'lodash';
+import path from 'path';
+import {GRAFANA_ADMIN_AUTH_URL, GRAFANA_AUTH_TOKEN, TOKEN_AUTH_URL} from '../constants';
 
 
 @injectable({scope: BindingScope.REQUEST})
 export class GrafanaOrgAdminService {
   constructor() { }
 
-  private async _deleteGrafanaOrg(grafanaOrgId: string): Promise<boolean> {
-    logger.info(`Delete the grafana org, with grafanaOrgId - '${grafanaOrgId}'.`);
-    const deleteGrafanaOrgApi = `/api/orgs/${grafanaOrgId}}`;
+  public async deleteGrafanaOrg(grafanaOrgId: string): Promise<boolean> {
+    console.log(`Delete the grafana org, with grafanaOrgId - '${grafanaOrgId}'.`);
+    const deleteGrafanaOrgApi = `/api/orgs/${grafanaOrgId}`;
     try {
       const response = await axios({
-        method: 'delete',
-        baseURL: GRAFANA_ADMIN_AUTH_URL,
-        url: deleteGrafanaOrgApi,
-        headers: {
-          Accept: 'application/json'
-        }
+        method: 'DELETE',
+        url: path.join(GRAFANA_ADMIN_AUTH_URL, deleteGrafanaOrgApi)
       });
 
       if (response?.status == 200) {
-        logger.info(`Grafana ORG with grafanaOrgId - '${grafanaOrgId} is deleted.`);
+        console.log(`Grafana ORG with grafanaOrgId - '${grafanaOrgId} is deleted.`);
         return true;
       }
 
       return false;
     } catch (error) {
-      logger.error(`Error while getting the grafana orgs list.`, error);
+      console.log(`Error while deleting grafana org with Id - ${grafanaOrgId}.`, error);
       return false;
     }
   }
@@ -36,43 +33,67 @@ export class GrafanaOrgAdminService {
   /**
    * Anchor orgId will be the name of the grafana org.
    **/
-  private async _checkGrafanaOrgExists(anchorOrgId: string): Promise<string | undefined> {
-    logger.info(`Searching grafana ORGs list by name - '${anchorOrgId}'.`);
+  public async checkGrafanaOrgExists(anchorOrgId: string): Promise<string | undefined> {
+    console.log(`Searching grafana ORGs list by name - '${anchorOrgId}'.`);
     const grafanaFindOrgbyName = `/api/orgs/name/${encodeURIComponent(anchorOrgId)}`;
     try {
       const response = await axios({
-        method: 'get',
-        baseURL: GRAFANA_ADMIN_AUTH_URL,
-        url: grafanaFindOrgbyName,
-        headers: {
-          Accept: 'application/json'
-        }
+        method: 'GET',
+        url: path.join(GRAFANA_ADMIN_AUTH_URL, grafanaFindOrgbyName)
       });
 
-      return response?.data?.orgId;
+      console.log(response.data);
+
+      const grafanaOrgId = response?.data?.id?.toString() ?? "";
+
+      if (isEmpty(grafanaOrgId)) {
+        return;
+      }
+      console.log(`Found grafana ORG  with name, Id - '${anchorOrgId}, ${grafanaOrgId}'`);
+      return grafanaOrgId;
     } catch (error) {
-      logger.error(`Error while getting the grafana orgs list.`, error);
+      console.log(error);
       return;
     }
   }
 
+  public getCurrentOrg = async (authKey: string): Promise<void> => {
+    const response = await axios({
+      method: 'GET',
+      url: path.join(GRAFANA_ADMIN_AUTH_URL, '/api/org/')
+    });
+
+    console.log(`current org admin auth - ${JSON.stringify(response?.data)}`);
+
+    const responsetoken = await axios({
+      method: 'GET',
+      url: path.join(TOKEN_AUTH_URL, '/api/org/'),
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${GRAFANA_AUTH_TOKEN}`
+      }
+    });
+    console.log(`current org token auth - ${JSON.stringify(responsetoken?.data)}`);
+  }
+
   public createGrafanaOrg = async (anchorOrgId: string): Promise<string | undefined> => {
     // check if org exists.
-    const grafanaOrgId = await this._checkGrafanaOrgExists(anchorOrgId);
+    const grafanaOrgId = (await this.checkGrafanaOrgExists(anchorOrgId))?.toString() ?? "";
 
+    console.log(`grafana log after checking is org exists - ${grafanaOrgId}`);
     // delete the org, if it already exists.
-    if (grafanaOrgId) {
-      await this._deleteGrafanaOrg(grafanaOrgId);
+    if (!isEmpty(grafanaOrgId)) {
+      console.log(`calling grafana org delete for - ${grafanaOrgId}`);
+      await this.deleteGrafanaOrg(grafanaOrgId);
     }
 
     // create new org using the orgId.
-    logger.info(`Creating new grafana ORG for AnchorOrgId - '${anchorOrgId}'.`);
+    console.log(`Creating new grafana ORG for AnchorOrgId - '${anchorOrgId}'.`);
     const grafanaCreateOrgApi = `/api/orgs`;
     try {
       const response = await axios({
         method: 'post',
-        baseURL: GRAFANA_ADMIN_AUTH_URL,
-        url: grafanaCreateOrgApi,
+        url: path.join(GRAFANA_ADMIN_AUTH_URL, grafanaCreateOrgApi),
         data: {
           name: anchorOrgId
         },
@@ -81,31 +102,28 @@ export class GrafanaOrgAdminService {
         }
       });
 
-      return response?.data?.orgId;
+      const newGrafanaOrgId = response?.data?.orgId ?? "";
+      return newGrafanaOrgId;
     } catch (error) {
-      logger.error(`Creating the grafana ORG failed for '${anchorOrgId}'.`, error);
+      console.log(error);
       return;
     }
   }
 
   public switchGrafanaOrg = async (grafanaOrgId: string): Promise<boolean> => {
-    logger.info(`Switching the grafana ORG to '${grafanaOrgId}'.`);
+    console.log(`Switching the grafana ORG to '${grafanaOrgId}'.`);
     const grafanaSwitchOrgApiEndpoint = `/api/user/using/${grafanaOrgId}`;
     try {
       const response = await axios({
-        method: 'post',
-        baseURL: GRAFANA_ADMIN_AUTH_URL,
-        url: grafanaSwitchOrgApiEndpoint,
-        headers: {
-          Accept: 'application/json'
-        }
+        method: 'POST',
+        url: path.join(GRAFANA_ADMIN_AUTH_URL, grafanaSwitchOrgApiEndpoint)
       });
 
       const orgSwitched = response?.status === 200;
       return orgSwitched ?? false;
     } catch (error) {
-      logger.error(`Switching the grafana ORG to '${grafanaOrgId}' failed.`, error);
-      throw error;
+      console.log(error);
+      return false;
     }
   }
 }

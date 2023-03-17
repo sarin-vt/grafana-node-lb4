@@ -1,6 +1,6 @@
 import {BindingScope, injectable} from '@loopback/core';
 import axios from 'axios';
-import {GRAFANA_ADMIN_AUTH_URL, INFLUX_ENDPOINT, INFLUX_TOKEN, TOKEN_AUTH_URL} from '../constants';
+import {GRAFANA_AUTH_TOKEN, INFLUX_ENDPOINT, INFLUX_TOKEN, TOKEN_AUTH_URL} from '../constants';
 import logger from '../helpers/logger';
 
 
@@ -10,7 +10,7 @@ export class GrafanaDataSourceService {
 
   public createGrafanaInfluxDataSource = async (grafanaOrgId: string, anchorOrgId: string): Promise<boolean | undefined> => {
     const influxCreateDatasourceApi = '/api/datasources';
-    logger.info(`Searching grafana ORGs list by name - '${anchorOrgId}'.`);
+    logger.info(`Creating influx data source for - '${anchorOrgId}'`);
 
     try {
       await axios({
@@ -19,7 +19,7 @@ export class GrafanaDataSourceService {
         url: influxCreateDatasourceApi,
         headers: {
           Accept: 'application/json',
-          Authorization: `Bearer ${GRAFANA_ADMIN_AUTH_URL}`
+          Authorization: `Bearer ${GRAFANA_AUTH_TOKEN}`
         },
         data: {
           "orgId": grafanaOrgId,
@@ -41,7 +41,8 @@ export class GrafanaDataSourceService {
 
       return true;
     } catch (error) {
-      logger.error(`Searching grafana ORGs list by name - '${anchorOrgId}'.`);
+      logger.error(`Error while creating influx datasource for - '${anchorOrgId}'.`, error);
+      console.log(error);
       return false;
     }
   }

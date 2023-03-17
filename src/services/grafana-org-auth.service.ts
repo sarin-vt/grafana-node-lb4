@@ -8,12 +8,12 @@ import logger from '../helpers/logger';
 export class GrafanaOrgAuthService {
   constructor() { }
 
-  public getGrafanaApiKey = async (grafanaOrgId: string, anchorOrgId: string): Promise<string | undefined> => {
+  public getGrafanaApiKey = async (): Promise<string | undefined> => {
     logger.info(`Requesting new API key for current ORG, with Role - Admin`);
     const grafanaApiKey = `/api/auth/keys`;
     try {
       const response = await axios({
-        method: 'post',
+        method: 'POST',
         baseURL: GRAFANA_ADMIN_AUTH_URL,
         url: grafanaApiKey,
         headers: {
@@ -25,9 +25,11 @@ export class GrafanaOrgAuthService {
           secondsToLive: 86400
         }
       });
+
+      console.log(`API Key - ${JSON.stringify(response?.data)}`);
       return response?.data?.key ?? null;
     } catch (error) {
-      logger.info(`Failed to get new API Key for current ORG - (${grafanaOrgId}, ${anchorOrgId}), with Role - Admin`);
+      logger.info(`Failed to get new API Key for current ORG, with Role - Admin`);
       return;
     }
   }
