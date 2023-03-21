@@ -3,6 +3,7 @@ import {post, requestBody} from '@loopback/rest';
 import {isEmpty} from 'lodash';
 import logger from '../helpers/logger';
 import {GrafanaDataSourceService, GrafanaOrgAdminService, GrafanaOrgAuthService} from '../services';
+import {GrafanaDashboardService} from '../services/grafana-dashboard.service';
 import {GrafanaUserService} from '../services/grafana-user.service';
 
 export class GrafanaController {
@@ -15,6 +16,8 @@ export class GrafanaController {
     public grafanaDatasourceService: GrafanaDataSourceService,
     @service(GrafanaUserService)
     public grafanaUserService: GrafanaUserService,
+    @service(GrafanaDashboardService)
+    public grafanaDashboardService: GrafanaDashboardService,
   ) { }
 
 
@@ -39,11 +42,12 @@ export class GrafanaController {
       }
 
       await this.grafanaAdminService.switchGrafanaOrg(grafanaOrgId);
-      await this.grafanaAdminService.getCurrentOrg(authKey);
-      await this.grafanaUserService.createGrafanaOrgAdminUser(anchorOrgId, adminEmail, authKey);
+      const adminAuthKey = await this.grafanaAuthService.getGrafanaApiKey() ?? "";
+      await this.grafanaAdminService.getCurrentOrg(adminAuthKey);
+      await this.grafanaUserService.createGrafanaOrgAdminUser(anchorOrgId, adminEmail, adminAuthKey);
 
-      //this.grafanaDatasourceService.createGrafanaInfluxDataSource(grafanaOrgId, anchorOrgId);
-      //this.grafanaUserService.createGrafanaAdminUser(anchorOrgId, adminEmail);
+      await this.grafanaDatasourceService.createGrafanaInfluxDataSource(grafanaOrgId, anchorOrgId, adminAuthKey);
+      await this.grafanaDashboardService.createNewGrafanaDashboard(anchorOrgId, adminAuthKey);
     } catch (error) {
       logger.error(error);
     }

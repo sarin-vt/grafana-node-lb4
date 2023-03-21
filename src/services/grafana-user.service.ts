@@ -2,7 +2,7 @@ import {BindingScope, injectable} from '@loopback/core';
 import axios from 'axios';
 import {isEmpty} from 'lodash';
 import path from 'path';
-import {GRAFANA_ADMIN_AUTH_URL, GRAFANA_AUTH_TOKEN, TOKEN_AUTH_URL} from '../constants';
+import {GRAFANA_ADMIN_AUTH_URL, TOKEN_AUTH_URL} from '../constants';
 import logger from '../helpers/logger';
 
 
@@ -65,7 +65,7 @@ export class GrafanaUserService {
         url: grafanaAdminUserInviteApi,
         headers: {
           Accept: 'application/json',
-          Authorization: `Bearer ${GRAFANA_AUTH_TOKEN}`
+          Authorization: `Bearer ${authToken}`
         },
         data: {
           name: "",
